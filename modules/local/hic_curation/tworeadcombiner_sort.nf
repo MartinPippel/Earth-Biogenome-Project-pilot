@@ -1,4 +1,4 @@
-process TWOREADCOMBINER_FIXMATE_SORT {
+process TWOREADCOMBINER_SORT {
     tag "$meta.id"
     label 'process_medium'
 

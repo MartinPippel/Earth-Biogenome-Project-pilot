@@ -10,8 +10,8 @@ process BAM2BED_SORT {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("*.pairs") , emit: pairs
-    path "versions.yml"              , emit: versions
+    tuple val(meta), path("*.pairs.gz") , emit: pairs
+    path "versions.yml"                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,7 +19,7 @@ process BAM2BED_SORT {
     script:
     def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
-    def args3 = task.ext.args3 ?: '1'
+    def args3 = task.ext.args3 ?: '0'
     def prefix = task.ext.prefix ?: "${meta.id}"
     
     """
@@ -28,7 +28,8 @@ process BAM2BED_SORT {
     sort -k4 --parallel=$task.cpus $args2 | \\
     paste -d '\t' - - | \\
     awk -v q=$args3 'BEGIN {FS=\"\t\"; OFS=\"\t\"} { if(int(\$5) >= int(q) && int(\$11) >= int(q)) { if (\$1 > \$7) { print substr(\$4,1,length(\$4)-2),\$7,\$8,\$1,\$2,\$12,\$6,\"UU\"} else { print substr(\$4,1,length(\$4)-2),\$1,\$2,\$7,\$8,\$6,\$12,\"UU\"} } }' | \\
-    sort -k2,2V -k4,4V -k3,3n -k5,5n --parallel=$task.cpus $args2 > ${prefix}.pairs
+    sort -k2,2V -k4,4V -k3,3n -k5,5n --parallel=$task.cpus $args2 | \\
+    bgzip -c -@$task.cpus > ${prefix}.pairs.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

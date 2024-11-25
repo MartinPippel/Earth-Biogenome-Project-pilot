@@ -8,7 +8,7 @@ process PRETEXT_TRACKS_INGESTION {
     tuple val(meta), path(pretext_in), path(cov_bedgraph), path(telomer_bedgraph), path(gap_bedgraph)
 
     output:
-    tuple val(meta), path("*_wTracks.pretext") , emit: hitile 
+    tuple val(meta), path("*_wTracks.pretext") , emit: pretext 
     path "versions.yml"              , emit: versions
 
     when:
