@@ -25,11 +25,12 @@ process FASTK_FASTK {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def FASTK_VERSION = 'f18a4e6d2207539f7b84461daebc54530a9559b0' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
+    def reduced_mem = task.memory.multiply(0.9).toGiga()
     """
     FastK \\
         $args \\
         -T$task.cpus \\
-        -M${task.memory.toGiga()} \\
+        -M$reduced_mem \\
         -N${prefix}_fk \\
         $reads
 
