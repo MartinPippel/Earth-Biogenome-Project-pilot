@@ -299,7 +299,7 @@ workflow SCAFFOLD_CURATION {
     .set { pretext_dedupQ1_ch }
     
     PRETEXTMAP_DEDUP_Q1(
-        pretext_dedupQ1_ch.bam,
+        pretext_dedupQ1_ch.pairs,
         pretext_dedupQ1_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q1.out.versions )
@@ -321,7 +321,7 @@ workflow SCAFFOLD_CURATION {
     .set { pretext_dupsQ0_ch }
 
     PRETEXTMAP_DUPS_Q0(
-        pretext_dupsQ0_ch.bam,
+        pretext_dupsQ0_ch.pairs,
         pretext_dupsQ0_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q0.out.versions )
@@ -343,7 +343,7 @@ workflow SCAFFOLD_CURATION {
     .set { pretext_dupsQ1_ch }
 
     PRETEXTMAP_DUPS_Q1(
-        pretext_dupsQ1_ch.bam,
+        pretext_dupsQ1_ch.pairs,
         pretext_dupsQ1_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q1.out.versions )
