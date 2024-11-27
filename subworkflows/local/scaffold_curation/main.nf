@@ -260,62 +260,93 @@ workflow SCAFFOLD_CURATION {
     COOLER_ZOOMIFY_DUPS_Q1(coolerDupsQ1_zoomify_ch)
     ch_versions  = ch_versions.mix( COOLER_ZOOMIFY_DUPS_Q1.out.versions )
 
-    // create pretext maps, based on deduplicated bam file
+    // create pretext maps, based on deduplicated pairs file with MAPQV 0
     joinByMetaKeys(joinByMetaKeys(
             getPrimaryAssembly(ch_assemblies),
             SAMTOOLS_FAIDX.out.fai,
             keySet: ['id','sample'],
             meta: 'rhs'
-        ), BIOBAMBAM_BAMMARKDUPLICATES2.out.bam,
+        ), BAM2BED_SORT_DEDUP_Q0.out.pairs,
         keySet: ['id','sample'],
         meta: 'rhs'
     )
-    .multiMap { meta, fasta, fai, bam ->
-        bam       : [ meta, bam ]
+    .multiMap { meta, fasta, fai, pairs ->
+        pairs     : [ meta, pairs ]
         fasta_fai : [ meta, fasta, fai ]
     }
-    .set { pretext_dedup_ch }
+    .set { pretext_dedupQ0_ch }
 
     PRETEXTMAP_DEDUP_Q0(
-        pretext_dedup_ch.bam,
-        pretext_dedup_ch.fasta_fai
+        pretext_dedupQ0_ch.pairs,
+        pretext_dedupQ0_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q0.out.versions )
 
-    PRETEXTMAP_DEDUP_Q1(
-        pretext_dedup_ch.bam,
-        pretext_dedup_ch.fasta_fai
-    )
-    ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q1.out.versions )
-
-    // create pretext maps, based on bam file, which includes duplicates 
+    // create pretext maps, based on deduplicated pairs file with MAPQV 1
     joinByMetaKeys(joinByMetaKeys(
             getPrimaryAssembly(ch_assemblies),
             SAMTOOLS_FAIDX.out.fai,
             keySet: ['id','sample'],
             meta: 'rhs'
-        ), dedup_input_bam,
+        ), BAM2BED_SORT_DEDUP_Q1.out.pairs,
         keySet: ['id','sample'],
         meta: 'rhs'
     )
-    .multiMap { meta, fasta, fai, bam ->
-        bam       : [ meta, bam ]
+    .multiMap { meta, fasta, fai, pairs ->
+        pairs     : [ meta, pairs ]
         fasta_fai : [ meta, fasta, fai ]
     }
-    .set { pretext_dups_ch }
-
-    PRETEXTMAP_DUPS_Q0(
-        pretext_dups_ch.bam,
-        pretext_dups_ch.fasta_fai
-    )
-    ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q0.out.versions )
-
-    PRETEXTMAP_DUPS_Q1(
-        pretext_dups_ch.bam,
-        pretext_dups_ch.fasta_fai
+    .set { pretext_dedupQ1_ch }
+    
+    PRETEXTMAP_DEDUP_Q1(
+        pretext_dedupQ1_ch.bam,
+        pretext_dedupQ1_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q1.out.versions )
 
+    // create pretext maps, based on pairs (including dups) file with MAPQV 0
+    joinByMetaKeys(joinByMetaKeys(
+            getPrimaryAssembly(ch_assemblies),
+            SAMTOOLS_FAIDX.out.fai,
+            keySet: ['id','sample'],
+            meta: 'rhs'
+        ), BAM2BED_SORT_DUPS_Q0.out.pairs,
+        keySet: ['id','sample'],
+        meta: 'rhs'
+    )
+    .multiMap { meta, fasta, fai, pairs ->
+        pairs     : [ meta, pairs ]
+        fasta_fai : [ meta, fasta, fai ]
+    }
+    .set { pretext_dupsQ0_ch }
+
+    PRETEXTMAP_DUPS_Q0(
+        pretext_dupsQ0_ch.bam,
+        pretext_dupsQ0_ch.fasta_fai
+    )
+    ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q0.out.versions )
+
+    // create pretext maps, based on pairs (including dups) file with MAPQV 1
+    joinByMetaKeys(joinByMetaKeys(
+            getPrimaryAssembly(ch_assemblies),
+            SAMTOOLS_FAIDX.out.fai,
+            keySet: ['id','sample'],
+            meta: 'rhs'
+        ), BAM2BED_SORT_DUPS_Q1.out.pairs,
+        keySet: ['id','sample'],
+        meta: 'rhs'
+    )
+    .multiMap { meta, fasta, fai, pairs ->
+        pairs     : [ meta, pairs ]
+        fasta_fai : [ meta, fasta, fai ]
+    }
+    .set { pretext_dupsQ1_ch }
+
+    PRETEXTMAP_DUPS_Q1(
+        pretext_dupsQ1_ch.bam,
+        pretext_dupsQ1_ch.fasta_fai
+    )
+    ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q1.out.versions )
 
     // create tracks for PretextMap:
     // coverage, gap, telomer
