@@ -23,13 +23,23 @@ process BAM2BED_SORT {
     def prefix = task.ext.prefix ?: "${meta.id}"
     
     """
+    ## create a proper pairs header
+    echo "## pairs format v1.0" > ${prefix}.pairs
+    echo "#columns: readID chr1 pos1 chr2 pos2 strand1 strand2 code" >> ${prefix}.pairs
+
+    samtools view -H $args ${bam} | grep -e "^@SQ" | \
+    sed -e "s/@SQ\tSN:/#chromsize: /" | sed -e "s/LN://" >> ${prefix}.pairs
+
+    ## add pairs
     samtools view -@$task.cpus $args ${bam} | \\
     bamToBed | \\
     sort -k4 --parallel=$task.cpus $args2 | \\
     paste -d '\t' - - | \\
     awk -v q=$args3 'BEGIN {FS=\"\t\"; OFS=\"\t\"} { if(int(\$5) >= int(q) && int(\$11) >= int(q)) { if (\$1 > \$7) { print substr(\$4,1,length(\$4)-2),\$7,\$8,\$1,\$2,\$12,\$6,\"UU\"} else { print substr(\$4,1,length(\$4)-2),\$1,\$2,\$7,\$8,\$6,\$12,\"UU\"} } }' | \\
-    sort -k2,2V -k4,4V -k3,3n -k5,5n --parallel=$task.cpus $args2 | \\
-    bgzip -c -@$task.cpus > ${prefix}.pairs.gz
+    sort -k2,2V -k4,4V -k3,3n -k5,5n --parallel=$task.cpus $args2 >> ${prefix}.pairs
+
+    ## compress pairs file 
+    bgzip -c -@$task.cpus ${prefix}.pairs
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
