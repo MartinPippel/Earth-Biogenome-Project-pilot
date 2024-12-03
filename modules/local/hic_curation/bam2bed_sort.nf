@@ -27,7 +27,7 @@ process BAM2BED_SORT {
     echo "## pairs format v1.0" > ${prefix}.pairs
     echo "#columns: readID chr1 pos1 chr2 pos2 strand1 strand2 code" >> ${prefix}.pairs
 
-    samtools view -H $args ${bam} | grep -e "^@SQ" | \
+    samtools view -H ${bam} | grep -e "^@SQ" | \
     sed -e "s/@SQ\tSN:/#chromsize: /" | sed -e "s/LN://" >> ${prefix}.pairs
 
     ## add pairs
