@@ -39,7 +39,7 @@ process BAM2BED_SORT {
     sort -k2,2V -k4,4V -k3,3n -k5,5n --parallel=$task.cpus $args2 >> ${prefix}.pairs
 
     ## compress pairs file 
-    bgzip -c -@$task.cpus ${prefix}.pairs
+    bgzip -@$task.cpus ${prefix}.pairs
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
