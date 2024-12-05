@@ -1,0 +1,21 @@
+Changes in module 'nf-core/pretextmap'
+--- modules/nf-core/pretextmap/main.nf
++++ modules/nf-core/pretextmap/main.nf
+@@ -23,6 +23,7 @@
+     def args        = task.ext.args     ?: ''
+     def prefix      = task.ext.prefix   ?: "${meta.id}"
+     def reference   = fasta             ? "--reference ${fasta}" : ""
++    def args2       = task.ext.args2    ?: ''
+ 
+     """
+     if [[ $input == *.pairs.gz ]]; then
+@@ -34,6 +35,7 @@
+             view \\
+             $reference \\
+             -h \\
++            ${args2} \\
+             $input | PretextMap \\
+             $args \\
+             -o ${prefix}.pretext
+
+************************************************************

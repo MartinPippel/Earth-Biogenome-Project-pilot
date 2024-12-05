@@ -23,6 +23,7 @@ process PRETEXTMAP {
     def args        = task.ext.args     ?: ''
     def prefix      = task.ext.prefix   ?: "${meta.id}"
     def reference   = fasta             ? "--reference ${fasta}" : ""
+    def args2       = task.ext.args2    ?: ''
 
     """
     if [[ $input == *.pairs.gz ]]; then
@@ -34,6 +35,7 @@ process PRETEXTMAP {
             view \\
             $reference \\
             -h \\
+            ${args2} \\
             $input | PretextMap \\
             $args \\
             -o ${prefix}.pretext
