@@ -12,22 +12,14 @@ include { SAMTOOLS_MERGE as SAMTOOLS_MERGE_HIC                          } from "
 include { SAMTOOLS_MERGE as SAMTOOLS_MERGE_HIFI                         } from "$projectDir/modules/nf-core/samtools/merge/main"
 include { SAMTOOLS_SORT                                                 } from "$projectDir/modules/nf-core/samtools/sort/main"
 include { BAM2BED_SORT as BAM2BED_SORT_DEDUP_Q0                         } from "$projectDir/modules/local/hic_curation/bam2bed_sort"
-include { BAM2BED_SORT as BAM2BED_SORT_DEDUP_Q1                         } from "$projectDir/modules/local/hic_curation/bam2bed_sort"
 include { BAM2BED_SORT as BAM2BED_SORT_DUPS_Q0                          } from "$projectDir/modules/local/hic_curation/bam2bed_sort"
-include { BAM2BED_SORT as BAM2BED_SORT_DUPS_Q1                          } from "$projectDir/modules/local/hic_curation/bam2bed_sort"
 include { COOLER_CLOAD as COOLER_CLOAD_DEDUP_Q0                         } from "$projectDir/modules/nf-core/cooler/cload/main"
-include { COOLER_CLOAD as COOLER_CLOAD_DEDUP_Q1                         } from "$projectDir/modules/nf-core/cooler/cload/main"
 include { COOLER_CLOAD as COOLER_CLOAD_DUPS_Q0                          } from "$projectDir/modules/nf-core/cooler/cload/main"
-include { COOLER_CLOAD as COOLER_CLOAD_DUPS_Q1                          } from "$projectDir/modules/nf-core/cooler/cload/main"
 include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_DEDUP_Q0                     } from "$projectDir/modules/nf-core/cooler/zoomify/main"
-include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_DEDUP_Q1                     } from "$projectDir/modules/nf-core/cooler/zoomify/main"
 include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_DUPS_Q0                      } from "$projectDir/modules/nf-core/cooler/zoomify/main"
-include { COOLER_ZOOMIFY as COOLER_ZOOMIFY_DUPS_Q1                      } from "$projectDir/modules/nf-core/cooler/zoomify/main"
 include { CREATE_CHROMOSOME_SIZES_FILE                                  } from "$projectDir/modules/local/hic_curation/create_chromosome_sizes"
 include { PRETEXTMAP as PRETEXTMAP_DEDUP_Q0                             } from "$projectDir/modules/nf-core/pretextmap/main"
-include { PRETEXTMAP as PRETEXTMAP_DEDUP_Q1                             } from "$projectDir/modules/nf-core/pretextmap/main"
 include { PRETEXTMAP as PRETEXTMAP_DUPS_Q0                              } from "$projectDir/modules/nf-core/pretextmap/main"
-include { PRETEXTMAP as PRETEXTMAP_DUPS_Q1                              } from "$projectDir/modules/nf-core/pretextmap/main"
 include { MINIMAP2_INDEX                                                } from "$projectDir/modules/nf-core/minimap2/index/main"
 include { MINIMAP2_ALIGN                                                } from "$projectDir/modules/nf-core/minimap2/align/main"
 include { BAM2COVERAGE_TRACKS                                           } from "$projectDir/modules/local/hic_curation/bam2coverageTracks"
@@ -38,9 +30,7 @@ include { TIDK_SEARCH as TIDK_SEARCH_TSV                                } from "
 include { TIDK_PLOT                                                     } from "$projectDir/modules/nf-core/tidk/plot/main"
 include { CREATE_TELOMER_BIGWIG_TRACK                                   } from "$projectDir/modules/local/hic_curation/create_telomer_bigwig_track"
 include { PRETEXT_TRACKS_INGESTION as PRETEXT_DEDUP_Q0_TRACKS_INGESTION } from "$projectDir/modules/local/hic_curation/pretext_tracks_ingestion"
-include { PRETEXT_TRACKS_INGESTION as PRETEXT_DEDUP_Q1_TRACKS_INGESTION } from "$projectDir/modules/local/hic_curation/pretext_tracks_ingestion"
 include { PRETEXT_TRACKS_INGESTION as PRETEXT_DUPS_Q0_TRACKS_INGESTION  } from "$projectDir/modules/local/hic_curation/pretext_tracks_ingestion"
-include { PRETEXT_TRACKS_INGESTION as PRETEXT_DUPS_Q1_TRACKS_INGESTION  } from "$projectDir/modules/local/hic_curation/pretext_tracks_ingestion"
 
 workflow SCAFFOLD_CURATION {
     take:
@@ -122,12 +112,8 @@ workflow SCAFFOLD_CURATION {
     // convert bam to sorted bed file
     BAM2BED_SORT_DEDUP_Q0(BIOBAMBAM_BAMMARKDUPLICATES2.out.bam)
     ch_versions  = ch_versions.mix( BAM2BED_SORT_DEDUP_Q0.out.versions )
-    BAM2BED_SORT_DEDUP_Q1(BIOBAMBAM_BAMMARKDUPLICATES2.out.bam)
-    ch_versions  = ch_versions.mix( BAM2BED_SORT_DEDUP_Q1.out.versions )
     BAM2BED_SORT_DUPS_Q0(BIOBAMBAM_BAMMARKDUPLICATES2.out.bam)
     ch_versions  = ch_versions.mix( BAM2BED_SORT_DUPS_Q0.out.versions )
-    BAM2BED_SORT_DUPS_Q1(BIOBAMBAM_BAMMARKDUPLICATES2.out.bam)
-    ch_versions  = ch_versions.mix( BAM2BED_SORT_DUPS_Q1.out.versions )
 
     // create chrome sizes file from fai file
     CREATE_CHROMOSOME_SIZES_FILE(SAMTOOLS_FAIDX.out.fai, params.hic_map_sort_by)
@@ -167,37 +153,6 @@ workflow SCAFFOLD_CURATION {
     COOLER_ZOOMIFY_DEDUP_Q0(coolerDedupQ0_zoomify_ch)
     ch_versions  = ch_versions.mix( COOLER_ZOOMIFY_DEDUP_Q0.out.versions )
 
-    // based on deduped pairs with mapQV 1
-    BAM2BED_SORT_DEDUP_Q1.out.pairs
-        .map { meta, pairs  -> [ meta, pairs, [ ] ] }
-        .combine(
-            Channel.value(params.cooler_bin_size)
-        )
-        .set { dedupPairsQ1_idx_binsize_ch }
-
-    combineByMetaKeys( // Combine Hi-C reads with BWA index
-        dedupPairsQ1_idx_binsize_ch, CREATE_CHROMOSOME_SIZES_FILE.out.sizes,
-        keySet: ['id','sample'],
-        meta: 'rhs'
-    )
-    .multiMap { meta, pairs, fake_index, cool_bin, chrom_sizes ->
-        cload_in     : [ meta, pairs, fake_index, cool_bin ]
-        chrom_sizes  : chrom_sizes
-    }
-    .set { coolerDedupQ1_cload_ch }
-
-    COOLER_CLOAD_DEDUP_Q1(
-        coolerDedupQ1_cload_ch.cload_in,
-        coolerDedupQ1_cload_ch.chrom_sizes
-    )
-    ch_versions  = ch_versions.mix( COOLER_CLOAD_DEDUP_Q1.out.versions )
-
-    COOLER_CLOAD_DEDUP_Q1.out.cool.map { meta, cool, cool_bin ->  [ meta, cool ] }
-    .set { coolerDedupQ1_zoomify_ch }
-
-    COOLER_ZOOMIFY_DEDUP_Q1(coolerDedupQ1_zoomify_ch)
-    ch_versions  = ch_versions.mix( COOLER_ZOOMIFY_DEDUP_Q1.out.versions )
-
     // based on pairs including dups with mapQV 0
     BAM2BED_SORT_DUPS_Q0.out.pairs
         .map { meta, pairs  -> [ meta, pairs, [ ] ] }
@@ -229,80 +184,27 @@ workflow SCAFFOLD_CURATION {
     COOLER_ZOOMIFY_DUPS_Q0(coolerDupsQ0_zoomify_ch)
     ch_versions  = ch_versions.mix( COOLER_ZOOMIFY_DUPS_Q0.out.versions )
 
-    // based on pairs including dups with mapQV 1
-    BAM2BED_SORT_DUPS_Q1.out.pairs
-        .map { meta, pairs  -> [ meta, pairs, [ ] ] }
-        .combine(
-            Channel.value(params.cooler_bin_size)
-        )
-        .set { dupPairsQ1_idx_binsize_ch }
-
-    combineByMetaKeys( // Combine Hi-C reads with BWA index
-        dupPairsQ1_idx_binsize_ch, CREATE_CHROMOSOME_SIZES_FILE.out.sizes,
-        keySet: ['id','sample'],
-        meta: 'rhs'
-    )
-    .multiMap { meta, pairs, fake_index, cool_bin, chrom_sizes ->
-        cload_in     : [ meta, pairs, fake_index, cool_bin ]
-        chrom_sizes  : chrom_sizes
-    }
-    .set { coolerDupsQ1_cload_ch }
-
-    COOLER_CLOAD_DUPS_Q1(
-        coolerDupsQ1_cload_ch.cload_in,
-        coolerDupsQ1_cload_ch.chrom_sizes
-    )
-    ch_versions  = ch_versions.mix( COOLER_CLOAD_DUPS_Q1.out.versions )
-
-    COOLER_CLOAD_DUPS_Q1.out.cool.map { meta, cool, cool_bin ->  [ meta, cool ] }
-    .set { coolerDupsQ1_zoomify_ch }
-
-    COOLER_ZOOMIFY_DUPS_Q1(coolerDupsQ1_zoomify_ch)
-    ch_versions  = ch_versions.mix( COOLER_ZOOMIFY_DUPS_Q1.out.versions )
-
     // create pretext maps, based on deduplicated pairs file with MAPQV 0
     joinByMetaKeys(joinByMetaKeys(
             getPrimaryAssembly(ch_assemblies),
             SAMTOOLS_FAIDX.out.fai,
             keySet: ['id','sample'],
             meta: 'rhs'
-        ), BAM2BED_SORT_DEDUP_Q0.out.pairs,
+        ), BIOBAMBAM_BAMMARKDUPLICATES2.out.bam,
         keySet: ['id','sample'],
         meta: 'rhs'
     )
-    .multiMap { meta, fasta, fai, pairs ->
-        pairs     : [ meta, pairs ]
+    .multiMap { meta, fasta, fai, bam ->
+        bam       : [ meta, bam ]
         fasta_fai : [ meta, fasta, fai ]
     }
     .set { pretext_dedupQ0_ch }
 
     PRETEXTMAP_DEDUP_Q0(
-        pretext_dedupQ0_ch.pairs,
+        pretext_dedupQ0_ch.bam,
         pretext_dedupQ0_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q0.out.versions )
-
-    // create pretext maps, based on deduplicated pairs file with MAPQV 1
-    joinByMetaKeys(joinByMetaKeys(
-            getPrimaryAssembly(ch_assemblies),
-            SAMTOOLS_FAIDX.out.fai,
-            keySet: ['id','sample'],
-            meta: 'rhs'
-        ), BAM2BED_SORT_DEDUP_Q1.out.pairs,
-        keySet: ['id','sample'],
-        meta: 'rhs'
-    )
-    .multiMap { meta, fasta, fai, pairs ->
-        pairs     : [ meta, pairs ]
-        fasta_fai : [ meta, fasta, fai ]
-    }
-    .set { pretext_dedupQ1_ch }
-    
-    PRETEXTMAP_DEDUP_Q1(
-        pretext_dedupQ1_ch.pairs,
-        pretext_dedupQ1_ch.fasta_fai
-    )
-    ch_versions  = ch_versions.mix( PRETEXTMAP_DEDUP_Q1.out.versions )
 
     // create pretext maps, based on pairs (including dups) file with MAPQV 0
     joinByMetaKeys(joinByMetaKeys(
@@ -310,43 +212,21 @@ workflow SCAFFOLD_CURATION {
             SAMTOOLS_FAIDX.out.fai,
             keySet: ['id','sample'],
             meta: 'rhs'
-        ), BAM2BED_SORT_DUPS_Q0.out.pairs,
+        ), BIOBAMBAM_BAMMARKDUPLICATES2.out.bam,
         keySet: ['id','sample'],
         meta: 'rhs'
     )
-    .multiMap { meta, fasta, fai, pairs ->
-        pairs     : [ meta, pairs ]
+    .multiMap { meta, fasta, fai, bam ->
+        bam       : [ meta, bam ]
         fasta_fai : [ meta, fasta, fai ]
     }
     .set { pretext_dupsQ0_ch }
 
     PRETEXTMAP_DUPS_Q0(
-        pretext_dupsQ0_ch.pairs,
+        pretext_dupsQ0_ch.bam,
         pretext_dupsQ0_ch.fasta_fai
     )
     ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q0.out.versions )
-
-    // create pretext maps, based on pairs (including dups) file with MAPQV 1
-    joinByMetaKeys(joinByMetaKeys(
-            getPrimaryAssembly(ch_assemblies),
-            SAMTOOLS_FAIDX.out.fai,
-            keySet: ['id','sample'],
-            meta: 'rhs'
-        ), BAM2BED_SORT_DUPS_Q1.out.pairs,
-        keySet: ['id','sample'],
-        meta: 'rhs'
-    )
-    .multiMap { meta, fasta, fai, pairs ->
-        pairs     : [ meta, pairs ]
-        fasta_fai : [ meta, fasta, fai ]
-    }
-    .set { pretext_dupsQ1_ch }
-
-    PRETEXTMAP_DUPS_Q1(
-        pretext_dupsQ1_ch.pairs,
-        pretext_dupsQ1_ch.fasta_fai
-    )
-    ch_versions  = ch_versions.mix( PRETEXTMAP_DUPS_Q1.out.versions )
 
     // create tracks for PretextMap:
     // coverage, gap, telomer
@@ -510,27 +390,6 @@ workflow SCAFFOLD_CURATION {
 
     PRETEXT_DEDUP_Q0_TRACKS_INGESTION(pretext_dedup_q0_tracks_ch)
     ch_versions  = ch_versions.mix( PRETEXT_DEDUP_Q0_TRACKS_INGESTION.out.versions )
-    // based on dedup bam file with map qv 1
-    joinByMetaKeys(
-        joinByMetaKeys(
-            joinByMetaKeys(
-                PRETEXTMAP_DEDUP_Q1.out.pretext,
-                BAM2COVERAGE_TRACKS.out.capped_bed,
-                keySet: ['id','sample', 'assembly'],
-                meta: 'rhs'
-            ),
-            TIDK_SEARCH_BEDGRAPH.out.bedgraph,
-            keySet: ['id','sample','assembly'],
-            meta: 'rhs'
-        ),
-        CREATE_GAP_TRACKS.out.bedgraph,
-        keySet: ['id','sample','assembly'],
-        meta: 'rhs'
-    )
-    .set { pretext_dedup_q1_tracks_ch }
-
-    PRETEXT_DEDUP_Q1_TRACKS_INGESTION(pretext_dedup_q1_tracks_ch)
-    ch_versions  = ch_versions.mix( PRETEXT_DEDUP_Q1_TRACKS_INGESTION.out.versions )
 
     // based on bam file (including dups) with map qv 0
     joinByMetaKeys(
@@ -553,27 +412,6 @@ workflow SCAFFOLD_CURATION {
 
     PRETEXT_DUPS_Q0_TRACKS_INGESTION(pretext_dups_q0_tracks_ch)
     ch_versions  = ch_versions.mix( PRETEXT_DUPS_Q0_TRACKS_INGESTION.out.versions )
-    // based on bam file (including dups) with map qv 1
-    joinByMetaKeys(
-        joinByMetaKeys(
-            joinByMetaKeys(
-                PRETEXTMAP_DUPS_Q1.out.pretext,
-                BAM2COVERAGE_TRACKS.out.capped_bed,
-                keySet: ['id','sample', 'assembly'],
-                meta: 'rhs'
-            ),
-            TIDK_SEARCH_BEDGRAPH.out.bedgraph,
-            keySet: ['id','sample','assembly'],
-            meta: 'rhs'
-        ),
-        CREATE_GAP_TRACKS.out.bedgraph,
-        keySet: ['id','sample','assembly'],
-        meta: 'rhs'
-    )
-    .set { pretext_dups_q1_tracks_ch }
-
-    PRETEXT_DUPS_Q1_TRACKS_INGESTION(pretext_dups_q1_tracks_ch)
-    ch_versions  = ch_versions.mix( PRETEXT_DUPS_Q1_TRACKS_INGESTION.out.versions )
 
     emit:
     assemblies = Channel.empty()
